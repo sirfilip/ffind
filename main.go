@@ -9,10 +9,13 @@ import (
 	"strings"
 	"sync"
 
+	// "github.com/pkg/profile"
 	"golang.org/x/sync/errgroup"
 )
 
 func main() {
+	// defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
+
 	filename := flag.String("name", "", "file name")
 	concurrency := flag.Int("c", 10, "concurrency")
 	flag.Parse()
@@ -98,23 +101,12 @@ func perform(ctx context.Context, root, filename string, results chan<- string, 
 			if filter(entry) {
 				continue
 			}
-			f, err := os.Open(entry)
-			if err != nil {
-				return err
-			}
-			stat, err := f.Stat()
-			f.Close()
-			if err != nil {
-				return err
-			}
-			if stat.IsDir() {
-				wg.Add(1)
-				dirs <- entry
-				continue
-			}
 			if filepath.Base(entry) == filename {
 				results <- entry
+				continue
 			}
+			wg.Add(1)
+			dirs <- entry
 		}
 		return nil
 	}
