@@ -70,22 +70,19 @@ func lookup(ctx context.Context, filename, root string, res chan<- string) {
 		})
 	})
 
-	const numWorkers = 20
-	for i := 0; i < numWorkers; i++ {
-		g.Go(func() error {
-			for file := range files {
-				if filepath.Base(file) != filename {
-					continue
-				}
-				select {
-				case res <- file:
-				case <-ctx.Done():
-					return ctx.Err()
-				}
+	g.Go(func() error {
+		for file := range files {
+			if filepath.Base(file) != filename {
+				continue
 			}
-			return nil
-		})
-	}
+			select {
+			case res <- file:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+		return nil
+	})
 
 	if err := g.Wait(); err != nil {
 		fmt.Printf("ERROR: %v\n", err)
