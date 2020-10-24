@@ -42,23 +42,23 @@ func usage() {
 	os.Exit(1)
 }
 
-func stack() (chan<- string, <-chan string) {
+func queue() (chan<- string, <-chan string) {
 	in := make(chan string)
 	out := make(chan string)
 
 	go func() {
-		queue := make([]string, 0)
+		buff := make([]string, 0)
 		outCh := func() chan string {
-			if len(queue) == 0 {
+			if len(buff) == 0 {
 				return nil
 			}
 			return out
 		}
 		currVal := func() string {
-			if len(queue) == 0 {
+			if len(buff) == 0 {
 				return ""
 			}
-			return queue[0]
+			return buff[0]
 		}
 	loop:
 		for {
@@ -67,9 +67,9 @@ func stack() (chan<- string, <-chan string) {
 				if !ok {
 					break loop
 				}
-				queue = append(queue, val)
+				buff = append(buff, val)
 			case outCh() <- currVal():
-				queue = queue[1:]
+				buff = buff[1:]
 			}
 		}
 		close(out)
@@ -84,7 +84,7 @@ func filter(path string) bool {
 
 func perform(ctx context.Context, root, filename string, results chan<- string, concurrency int, filter func(string) bool) {
 	g := new(errgroup.Group)
-	in, out := stack()
+	in, out := queue()
 
 	readDir := func(root, filename string, results chan<- string, dirs chan<- string, wg *sync.WaitGroup) error {
 		if filter(root) {
