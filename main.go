@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -15,6 +16,8 @@ import (
 
 func main() {
 	// defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
+	STDOUT := bufio.NewWriter(os.Stdout)
+	defer STDOUT.Flush()
 
 	filename := flag.String("name", "", "file name")
 	concurrency := flag.Int("c", 10, "concurrency")
@@ -36,7 +39,7 @@ func main() {
 	results := make(chan string)
 	go perform(ctx, root, *filename, results, *concurrency, filter)
 	for res := range results {
-		fmt.Println(res)
+		fmt.Fprintln(STDOUT, res)
 	}
 }
 
@@ -95,7 +98,7 @@ func perform(ctx context.Context, root, filename string, results chan<- string, 
 		}
 		entries, err := filepath.Glob(root + "/*")
 		if err != nil {
-			return err
+			return fmt.Errorf("in glob: %w", err)
 		}
 		for _, entry := range entries {
 			if filter(entry) {
